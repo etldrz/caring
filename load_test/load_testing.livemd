@@ -1,0 +1,58 @@
+<!-- livebook:{"autosave_interval_s":60} -->
+
+# Load testing Experiment
+
+```elixir
+Mix.install([
+  {:experimentwizard, path: "./experimentwizard"}
+])
+```
+
+## Experiment connection
+
+```elixir
+pid1 = Experimentwizard.Master.get_experiment_interface("manager")
+experiment_name = "exwiztest"
+
+Experimentwizard.Manager.experiment(pid1, experiment_name)
+|> Experimentwizard.Manager.credentials(experiment_name, %{
+  certfile: "./creds/cloudlab_decrypted.pem",
+  cacertfile: "./creds/emulab-ca.pem"
+})
+|> Experimentwizard.Manager.profile(experiment_name, "PowderSandbox,Repo-Based_Cluster")
+|> Experimentwizard.Manager.project(experiment_name, "utahstud")
+
+# # Start the experiment, or try to connect to the existing experiment.
+Experimentwizard.Manager.connect_or_start(pid1, experiment_name)
+```
+
+## Yaml specifier
+
+```elixir
+yaml = """
+is: client-server
+requires:
+  client: c
+  server: s
+cells:
+    c:
+        targets:
+            - executer@node1.exwiztest.utahstud.emulab.net
+        commands:
+            - iperf3 -c 192.168.1.2 -t 10 -J
+        output: true
+    s:
+        targets:
+            - executer@node2.exwiztest.utahstud.emulab.net
+        commands:
+            - iperf3 -s
+        synchronous: false
+"""
+yaml_result = Experimentwizard.RuntimeManager.parse_yaml_string(yaml)
+```
+
+```elixir
+required_cells = yaml_result.requires
+eval_pattern = yaml_result.is
+all_cells = yaml_result.cells
+```
