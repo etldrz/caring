@@ -1,0 +1,75 @@
+# Experiment manager demo
+
+```elixir
+Mix.install([
+  {:experiment_manager, path: __DIR__}
+])
+```
+
+## Long running log
+
+```elixir
+{:ok, pidA} = Steward.start_link
+Steward.run_command(pidA, "for i in $(seq 1 15); do echo $i; sleep .1; done")
+tA0 = Task.async(fn -> Steward.get_log(pidA) |> Enum.to_list() end)
+tA1 = Task.async(fn -> Steward.get_log(pidA) |> Enum.to_list() end)
+lA0 = Task.await(tA0)
+lA1 = Task.await(tA1)
+
+allLog = lA0 ++ lA1
+```
+
+## Long running log with error at the end
+
+```elixir
+{:ok, pidB} = Steward.start_link
+Steward.run_command(pidB, "env; sleep 5; pwd; echodsfasf")
+#Steward.get_log(pidB) |> Enum.to_list()
+tB0 = Task.async(fn -> Steward.get_log(pidB) |> Enum.to_list() end)
+Task.await(tB0, :infinity)
+```
+
+## Orchestrator
+
+```elixir
+exp = Orchestrator.define_experiment(["pwd"], 2)
+```
+
+```elixir
+[res] = Orchestrator.one_rep(exp)
+```
+
+```elixir
+Task.await(res[:log_task])
+```
+
+```elixir
+exp = Orchestrator.define_experiment(
+  ["sudo apachectl start", "ab -n 100 -c 3", "sudo apachectl stop"],
+  3)
+rep_output = Orchestrator.one_rep(exp)
+```
+
+```elixir
+Orchestrator.get_logs(rep_output)
+```
+
+```elixir
+exp = Orchestrator.define_experiment(
+  ["sudo apachectl start", "ab -n 10 -c 2 http://localhost:80/", "sudo apachectl stop"],
+  3)
+rep_output = Orchestrator.one_rep(exp)
+with_logs = Orchestrator.get_logs(rep_output)
+```
+
+```elixir
+failures = Orchestrator.single_check_for_failure(with_logs)
+```
+
+```elixir
+results = Orchestrator.run_experiment(exp)
+```
+
+```elixir
+length(results)
+```

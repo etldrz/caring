@@ -1,0 +1,119 @@
+defmodule Orchestrator do
+  def define_experiment(
+        commands,
+        replication_count,
+        command_options \\ [[]],
+        on_error \\ :rerun,
+        failure_retries \\ 3
+        # node_login \\ nil
+      )
+      when is_list(commands) do
+    command_options =
+      if length(command_options) == 0 do
+        [[]]
+      else
+        command_options
+      end
+
+    %{}
+    |> Map.put(:cmds, commands)
+    |> Map.put(:reps, replication_count)
+    |> Map.put(:cmd_opts, command_options)
+    |> Map.put(:err_protocol, on_error)
+    |> Map.put(:retries, failure_retries)
+  end
+
+  def run_experiment(exp) do
+    #### work in exp[:retries]
+    ##   remove/somehow make distinct the failed reps
+    ##   build a function for one log over all events, sorted by time and labeled by command
+    ##   implement async processing of logs (and maybe reps too if user specifies)
+    reps =
+      1..exp[:reps]
+      |> Enum.map(fn _i ->
+        one_rep(exp)
+        |> get_logs()
+      end)
+
+    failure_count = check_for_failure(reps)
+
+    # better as rerun = 0..failure_count
+
+    # reps = Stream.unfold(exp[:retries], fn
+    #  0 -> []
+    #  _n -> 
+
+    if failure_count == 0 do
+      reps
+    else
+      rerun =
+        1..failure_count
+        |> Enum.map(fn _i ->
+          one_rep(exp)
+          |> get_logs()
+        end)
+
+      reps ++ rerun
+    end
+  end
+
+  def one_rep(exp, await_log \\ false) do
+    # where exp is a map built by define_experiment()
+
+    Enum.zip([exp[:cmds], Stream.cycle(exp[:cmd_opts])])
+    |> Enum.map(fn {cmd, opt} ->
+      {:ok, steward_pid} = Steward.start_link()
+      Steward.run_command(steward_pid, cmd, opt)
+
+      t = Task.async(fn -> Steward.get_log(steward_pid) |> Enum.to_list() end)
+
+      %{cmd: cmd, steward_pid: steward_pid, log_task: t}
+    end)
+  end
+
+  def get_logs(rep_output) do
+    # where rep_output is a list of results of the form returned by one_rep
+
+    # task shutdown? rebuild this to be parallel
+    rep_output
+    |> Enum.map(fn rep ->
+      new_rep =
+        rep
+        |> Map.put(:log, Task.await(rep[:log_task]))
+        |> Map.delete(:log_task)
+
+      if List.last(new_rep[:log]) == :ok do
+        Map.put(new_rep, :succeeded, true)
+      else
+        Map.put(new_rep, :succeeded, false)
+      end
+    end)
+  end
+
+  def check_for_failure(rep_outputs) do
+    # where rep_output has the :log key available
+    # gets a list of rep_outputs (all the replications) and checks each for failure. returns the
+    # failure count
+    # list of rep_outputs looks like [[%{},..], [%{},..],..]
+
+    rep_outputs
+    |> Enum.count(fn single_output ->
+      Enum.any?(single_output, fn out -> out[:succeeded] == false end)
+    end)
+  end
+
+  def single_check_for_failure(rep_outputs) do
+    # where rep_output has the :log key available
+    # gets a list of rep_outputs (all the replications) and checks each for failure. returns the
+    # failure count
+    # list of rep_outputs looks like [[%{},..], [%{},..],..]
+
+    rep_outputs
+    |> Enum.count(fn single_output -> single_output[:succeeded] == false end)
+
+    # |> Enum.count(fn single_output ->
+    #  Enum.any?(single_output, fn out -> out end)
+    # Enum.any?(single_output, fn out -> out[:succeeded] == false end)
+    # end)
+  end
+end
