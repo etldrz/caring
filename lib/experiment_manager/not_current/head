@@ -1,0 +1,126 @@
+defmodule Head do
+
+use GenServer
+
+  ## failure protocols
+  # no_response
+  # halt_for_any
+  # halt_for_some (given a tuple with the node(s) to halt for)
+  # planned_halt (given a tuple with the node(s) to halt for)
+
+  # client
+  def start_head() do
+    GenServer.start_link(__MODULE__, halt_protocol, name: :head)
+  end
+
+  def start_head(halt_protocol) do
+    GenServer.start_link(__MODULE__, halt_protocol, name: :head)
+  end
+
+  def broadcast(fun, arg) do
+    GenServer.call(:head, {:broadcast_fun, fun, arg})
+  end
+
+  def get_state() do
+    GenServer.call(:head, :get_state)
+  end
+
+  # server
+  @impl true
+  def init(halt_protocol) do
+    # monitors nodes going up/down
+    :net_kernel.monitor_nodes(true)
+
+    initstate =
+      %{
+        head_init_time: Steward.current_time(),
+        head_name: Node.self(),
+        log: [],
+        halt_protocol: halt_protocol
+      }
+
+    {:ok, initstate}
+  end
+
+  @impl true
+  def handle_info({:ok, arm_name, arm_results}, state) do
+    entry = %{
+      results_received: arm_name,
+      results: arm_results,
+      timestamp: Steward.current_time()
+    }
+
+    {:noreply, Map.update!(state, :log, &(&1 ++ [entry]))}
+  end
+
+  @impl true
+  def handle_info({:nodeup, node}, state) do
+    entry = %{
+      node_up: node,
+      timestamp: Steward.current_time()
+    }
+
+    {:noreply, Map.update!(state, :log, &(&1 ++ [entry]))}
+  end
+
+  @impl true
+  def handle_info({:nodedown, node}, state) do
+    ## failure protocols
+    # no_response
+    # halt_for_any
+    # halt_for_some (given a tuple with the node(s) to halt for)
+    # planned_halt (given a tuple with the node(s) to halt for)
+    action_taken =
+      case state[:halt_protocol] do
+        :none ->
+          "no halt"
+
+        :halt_for_any ->
+          stop_experiment()
+
+        {:halt_for_some, [nodes]} ->
+          if node in nodes do
+            stop_experiment()
+          else
+            "no halt"
+          end
+
+        {:planned_halt, [nodes]} ->
+          if node in nodes do
+            "no halt"
+          else
+            stop_experiment()
+          end
+      end
+
+    entry = %{
+      node_down: node,
+      timestamp: Steward.current_time()
+    }
+
+    {:noreply, Map.update!(state, :log, &(&1 ++ [entry]))}
+  end
+
+  @impl true
+  def handle_call({:broadcast_fun, fun, arg}, _from, state) do
+    entry =
+      %{
+        fun: fun,
+        args: arg,
+        sent_to: Node.list()
+      }
+
+    entry[:sent_to]
+    |> Enum.each(fn node ->
+      send({:arm, node}, {:fun_request, fun, arg, Node.self()})
+    end)
+
+    entry = %{entry_type: :broadcast_preformed, timestamp: Steward.current_time(), data: entry}
+    {:reply, :ok, Map.update!(state, :log, &(&1 ++ [entry]))}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+end

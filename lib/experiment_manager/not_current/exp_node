@@ -1,0 +1,131 @@
+defmodule ExpNode do
+  # A single node of some given experiment.
+  
+  require Logger
+  use GenServer
+
+  def start_node() do
+    GenServer.start_link(__MODULE__, nil, name: {:global, {:expnode, Node.self()}})
+  end
+
+  def get_state() do
+    GenServer.call({:global, {:expnode, Node.self()}}, :get_state)
+  end
+
+  @impl true
+  def init(_) do
+    state =
+      %{
+        node_name: Node.self(),
+      }
+
+    Logger.info("Node #{Node.self()} initialized")
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state), do: {:reply, state, state}
+
+  @impl true
+  def handle_cast({:handle_command, request, from_name}, state) do
+    {node_request, _meant_for} = request
+
+    Logger.info([msg: "node #{Node.self()} recieved a request from #{from_name}",
+		 request: node_request])
+    # recieved_entry =
+    #   ExpLog.create_entry(
+    #     "node #{Node.self()} recieved a request from #{from_name}",
+    #     request: node_request
+    #   )
+
+    command_entry = enact_command(node_request)
+
+
+    # response entry = ...
+    
+    # forwarding_entry =
+    #   if length(rest) == 0 do
+    #     ExpLog.create_entry("stack empty")
+    #     # maybe add :error/:ok to indicate how the process went
+    #   else
+    #     forward_stack(rest)
+    #   end
+
+    #full_entry = [recieved_entry, commnand_entry, response_entry]
+    full_entry = [recieved_entry, command_entry]
+
+    # {:noreply, Map.update!(state, :log, &(&1 ++ full_entry))}
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:update_log, msg, pid}, state) do
+    Logger.info([msg: "recieved an update from steward",
+		 steward_pid: pid,
+		 steward_log: msg])
+    # entry =
+    #   ExpLog.create_entry(
+    #     "recieved an update from steward",
+    # 	steward_pid: pid,
+    # 	steward_log: mesg
+    #   )
+
+    # {:noreply, Map.update!(state, :log, &(&1 ++ [entry]))}
+    {:noreply, state}
+  end
+
+  # send files using proces registery, i think
+
+  defp enact_command(node_request) do
+    # I think that the general types of commands can be divided into two categories.
+    #  - system commands, to be handled by the steward module
+    #  - experiment directives, meta commands that may take the form of 'wait x time' or
+    #  'send next message if x file exists'.
+
+    {type, cmd, opts} = node_request
+
+    case type do
+      :system ->
+        {:ok, steward_pid} = Steward.start_link(cmd, opts)
+        Steward.run_command(steward_pid)
+
+	Logger.info(
+	  [
+	    msg: "cmd of type :system run",
+	    command: cmd,
+	    options: opts,
+	    steward_pid: steward_pid,
+	    steward_log: Steward.get_log(steward_pid, Node.self())
+	  ]
+	)
+
+        # ExpLog.create_entry(
+        #   "cmd of type :system run",
+        #   cmd: cmd,
+        #   opts: opts,
+        #   steward_pid: steward_pid,
+        #   steward_log: Steward.get_log(steward_pid, Node.self())
+        # )
+
+      # steward_log: Steward.get_log(steward_pid, self()) |> Enum.to_list()])
+      :meta ->
+        {:halt}
+
+      _ ->
+        # error
+        {:halt}
+    end
+  end
+
+  defp forward_stack(stack) do
+    {_request, meant_for} = List.first(stack)
+
+    meant_for
+    |> Enum.each(fn node ->
+      GenServer.cast({:global, {:expnode, node}}, {:handle_command_stack, stack, Node.self()})
+    end)
+
+    Logger.info("sending request to\n\t" <> Enum.join(meant_for, ",\n\t"))
+    # ExpLog.create_entry("sending request to" <> Enum.join(meant_for, ", "))
+  end
+end

@@ -1,0 +1,45 @@
+defmodule Arm do
+  use GenServer
+
+  # client
+  def start_arm() do
+    GenServer.start_link(__MODULE__, %{}, name: :arm)
+  end
+
+  def get_state() do
+    GenServer.call(:arm, :get_state)
+  end
+
+  # server
+  @impl true
+  def init(_) do
+    initstate =
+      %{
+        arm_init_time: Steward.current_time(),
+        arm_name: Node.self(),
+        log: []
+      }
+
+    {:ok, initstate}
+  end
+
+  @impl true
+  def handle_info({:fun_request, fun, arg, head_name}, state) do
+    results = fun.(arg)
+    send({:head, head_name}, {:ok, Node.self(), results})
+
+    entry = %{
+      broadcast_received: head_name,
+      fun: fun,
+      args: arg,
+      timestamp: Steward.current_time()
+    }
+
+    {:noreply, Map.update!(state, :log, &(&1 ++ [entry]))}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+end

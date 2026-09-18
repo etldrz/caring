@@ -1,0 +1,4 @@
+ls module that can:
+   list files that have been produced
+   list commands that have been fulfilled, will be
+this can be done per single node, per groups, or per global

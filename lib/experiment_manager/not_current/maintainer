@@ -1,0 +1,37 @@
+# defmodule Maintainer do
+#  # genserver to watch whether nodes are connected
+#  use GenServer
+#
+#  # client
+#
+#  def start_link(_) do
+#    GenServer.start_link(__MODULE__, _)
+#  end
+#
+#  def active_nodes() do
+#    GenServer.call(self(), :get_nodes)
+#  end
+#
+#  # server
+#  @impl true
+#  def init(_) do
+#    :net_kernel.monitor_nodes(true)
+#    {:ok, Enum.into(Node.list(), MapSet.new())}
+#  end
+#
+#  @impl true
+#  def handle_info({:nodeup, node}, state) do
+#    {:noreply, MapSet.put(state, node)}
+#  end
+#
+#  @impl true
+#  def handle_info({:nodedown, node}, state) do
+#    IO.puts("node: #{node} has disconnected")
+#    {:noreply, MapSet.delete(state, node)}
+#  end
+#
+#  @impl true
+#  def handle_call(:get_nodes, state) do
+#    {:reply, MapSet.to_list(state), state}
+#  end
+# end

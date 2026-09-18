@@ -1,0 +1,12 @@
+{application,erlexec,
+             [{description,"OS Process Manager"},
+              {vsn,"2.3.2"},
+              {id,"erlexec"},
+              {modules,[exec,exec_app,exec_util]},
+              {registered,[exec]},
+              {applications,[kernel,stdlib]},
+              {mod,{exec_app,[]}},
+              {env,[]},
+              {exclude_paths,["priv"]},
+              {licenses,["BSD-2-Clause"]},
+              {links,[{"GitHub","https://github.com/saleyn/erlexec"}]}]}.
