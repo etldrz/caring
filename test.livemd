@@ -1,12 +1,12 @@
-# Untitled
+# Expman test
 
 ```elixir
-curr_path = __ENV__.file |> Path.dirname
+# curr_path = __ENV__.file |> Path.dirname
 
-Mix.install([
-  {:experiment_manager, path: curr_path},
-  {:kino, "~> 0.19.0"}
-])
+# Mix.install([
+#   {:experiment_manager, path: curr_path},
+#   {:kino, "~> 0.19.0"}
+# ])
 ```
 
 ## Section
@@ -87,26 +87,26 @@ IO.inspect("here", label: "here")
 ```
 
 ```elixir
-graph = """
-graph LR;
-cmdA <--> cmdB
-cmdA --> cmdC
-cmdB --> cmdC
-cmdA --> cmdD
-cmdB --> cmdD 
-"""
+# graph = """
+# graph LR;
+# cmdA <--> cmdB
+# cmdA --> cmdC
+# cmdB --> cmdC
+# cmdA --> cmdD
+# cmdB --> cmdD 
+# """
 
-Kino.Mermaid.new(graph)
+# Kino.Mermaid.new(graph)
 ```
 
 ```elixir
-Kino.Mermaid.new("""
-graph LR
-  subsystem_A --> subsystem_B
+# Kino.Mermaid.new("""
+# graph LR
+#   subsystem_A --> subsystem_B
 
-  subgraph subsystem_B
-    direction LR
-    B1 --> B2 --> B3
-  end
-""")
+#   subgraph subsystem_B
+#     direction LR
+#     B1 --> B2 --> B3
+#   end
+# """)
 ```

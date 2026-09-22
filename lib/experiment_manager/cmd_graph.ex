@@ -4,31 +4,31 @@ defmodule CmdGraph do
     defstruct [:name, :body, :usage, :target]
   end
 
-	def build_cmds(parsed) do
-		{cmds, rules} =
-			Enum.split_with(parsed, fn x ->
-				case x do
-					[:defcmd, _] -> true
-					_ -> false
-				end
-			end)
+  def build_cmds(parsed) do
+    {cmds, rules} =
+      Enum.split_with(parsed, fn x ->
+        case x do
+          [:defcmd, _] -> true
+        _ -> false
+      end
+          end)
     cmds =
       cmds
       |> Enum.map(fn x ->
         case x do
           [:defcmd, [{:id, _, name}, {:body, _, body}, {:id, _, target}]] ->
-            %Cmd{name: List.to_string(name), body: body, target: target}
+          %Cmd{name: List.to_string(name), body: body, target: target}
 
           [:defcmd, [{:id, _, name}, {:body, _, body}, {:usage, _, usage}, {:id, _, target}]] ->
-            %Cmd{name: List.to_string(name), body: body, usage: usage, target: target}
-					_ -> raise "Inappropriate cmd value\n#{inspect(x)}"
+          %Cmd{name: List.to_string(name), body: body, usage: usage, target: target}
+          _ -> raise "Inappropriate cmd value\n#{inspect(x)}"
         end
       end)
 
-		IO.inspect(cmds, label: "commands")
-		IO.inspect(List.flatten())
+    IO.inspect(cmds, label: "commands")
+    IO.inspect(rules, label: "rules")
 
-	end
+  end
 
 end
 
