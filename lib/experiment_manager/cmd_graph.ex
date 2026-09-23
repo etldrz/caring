@@ -8,8 +8,10 @@ defmodule CmdGraph do
     {cmds, rules} =
       Enum.split_with(parsed, fn x ->
         case x do
-          [:defcmd, _] -> true
-        _ -> false
+          [:defcmd, _] -> 
+          true
+        _ -> 
+          false
       end
           end)
     cmds =

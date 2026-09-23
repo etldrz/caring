@@ -11,22 +11,24 @@
 
 ## Section
 
-```elixir
-#require ExMan
-
-#IO.puts(ExMan.markdown_path())
-
-#IO.puts(ExMan.markdown_path_fun(__ENV__))
-
-ExMan.loadrules(__ENV__)
-```
-
-The rules are collected from the markdown cell build immediatly under a section labeled 'RULES'. 
-All the content until EOF, a section labeled 'END RULES', or a new code cell is collected and
-analyzed by `ExMan.loadrules(__ENV__)`. Alternatively, for formatting purposes, the cell can be 
-prefaced by \```elixir (or python or erlang) and end with \``` without any addtional steps.
-
 ## RULES
+
+```elixir
+rules=
+"""
+cmd cmdA { do this } node01;
+cmd cmdB { do that } node02;
+
+cmd cmdC { turn that on && turn that off } low, node02;
+cmd cmdD { turn that off && clean files } node02;
+"""
+# IO.puts(rules)
+#   ExMan.loadrules(rules)
+{:ok, ls, _} = rules
+|> String.to_charlist()
+|> :lexer.string()
+CmdGraph.build_cmds(ls)
+```
 
 <!-- livebook:{"force_markdown":true} -->
 
