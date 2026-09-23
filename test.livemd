@@ -21,94 +21,14 @@ cmd cmdB { do that } node02;
 
 cmd cmdC { turn that on && turn that off } low, node02;
 cmd cmdD { turn that off && clean files } node02;
-"""
-# IO.puts(rules)
-#   ExMan.loadrules(rules)
-{:ok, ls, _} = rules
-|> String.to_charlist()
-|> :lexer.string()
-CmdGraph.build_cmds(ls)
-```
 
-<!-- livebook:{"force_markdown":true} -->
-
-```elixir
-
-# ENTRY: node01
-
-# options to specify flow rate for the commands and nodes
-# maybe make MAX_CMDS a default that tells the
-# manager the absolute max commmands that can be run at once?
-# custom flow can be used to tag commands; the manager
-# runs commands based on their rules and their usage tags.
-# In the example below, a node can run 10 low usage at once, 3 med & 1 low, 
-# or one high.
-
-# MAX_CMDS: 10
-# CUSTOM_FLOW {
-# low: 1,
-# med: 3,
-# high: MAX_CMDS,
-# }
-
-# opt to repeat cmds? ie specify act01, then assign
-# cmd rule1..10 act01;
-# where 1..10 creates a range
-
-# cmd NAME { ACTION } USAGE, TARGET;
-cmd cmdA { do this } node01;
-cmd cmdB { open that } node03;
-  
-cmd cmdC { turn that on && turn that off } low, node02;
-cmd cmdD { turn that off && clean files } node02;
-
-# raises error:
-#run cmdA and cmdA;
-
-# could designate cmds as 'immutable', ie each rule references
-# only that command node. The converse means that each run reference
-# to that command creates a new node.
 run cmdA and cmdB then cmdC or cmdD;
-# run cmdA or cmdB 
-#   then cmdC and cmdD
-#     then cmdA 
-#       then cmdC and cmdD;
+run cmdC then cmdD;
+"""
 
-# collect {
-# output1.txt,
-# collected/data/here.csv
-# } node01;
-
-#checks to make sure:
-  # rules don't use non-specified cmds
-  # cmds that don't get used give a warning
+ExMan.loadrules(rules)
 ```
 
 ```elixir
-IO.inspect("here", label: "here")
-```
-
-```elixir
-# graph = """
-# graph LR;
-# cmdA <--> cmdB
-# cmdA --> cmdC
-# cmdB --> cmdC
-# cmdA --> cmdD
-# cmdB --> cmdD 
-# """
-
-# Kino.Mermaid.new(graph)
-```
-
-```elixir
-# Kino.Mermaid.new("""
-# graph LR
-#   subsystem_A --> subsystem_B
-
-#   subgraph subsystem_B
-#     direction LR
-#     B1 --> B2 --> B3
-#   end
-# """)
+Main.start()
 ```
