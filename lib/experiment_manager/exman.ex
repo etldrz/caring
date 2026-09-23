@@ -2,7 +2,7 @@ defmodule ExMan do
 
   def loadrules(rulestr) do
     {:ok, ls, _} =
-      rules
+      rulestr
       |> String.to_charlist()
       |> :lexer.string()
 
