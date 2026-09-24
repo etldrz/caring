@@ -49,6 +49,9 @@ defmodule CmdGraph do
       MapSet.size(rules_but_not_defs) > 0 ->
         raise "There are named commands used in the ruleset that are not defined prior: 
         #{Enum.join(rules_but_not_defs, ", ")}"
+
+      true ->
+        nil
     end
 
     IO.inspect(cmds, label: "commands")
