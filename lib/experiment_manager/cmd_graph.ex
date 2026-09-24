@@ -1,13 +1,13 @@
 defmodule CmdGraph do
   defmodule Cmd do
-    defstruct [:name, :body, :usage, :target]
+    defstruct [:name, :body, :usage, :target, status: :queued]
   end
 
   def build_cmds(parsed) do
     {cmds, rules} =
       Enum.split_with(parsed, fn x ->
         case x do
-          [:defcmd, _] ->
+          {:defcmd, _} ->
             true
 
           _ ->
@@ -19,10 +19,10 @@ defmodule CmdGraph do
       cmds
       |> Enum.map(fn x ->
         case x do
-          [:defcmd, [{:id, _, name}, {:body, _, body}, {:id, _, target}]] ->
+          {:defcmd, {{:id, _, name}, {:body, _, body}, {:id, _, target}}} ->
             %Cmd{name: List.to_string(name), body: body, target: target}
 
-          [:defcmd, [{:id, _, name}, {:body, _, body}, {:usage, _, usage}, {:id, _, target}]] ->
+          {:defcmd, {{:id, _, name}, {:body, _, body}, {:usage, _, usage}, {:id, _, target}}} ->
             %Cmd{name: List.to_string(name), body: body, usage: usage, target: target}
 
           _ ->
@@ -30,17 +30,25 @@ defmodule CmdGraph do
         end
       end)
 
-    cmd_set_defs = MapSet.new(cmds, fn c -> c[:name] end)
-    cmd_set_rules = retrieve_cmds(rules)
+    cmd_set_defs = MapSet.new(cmds, fn c -> c.name end)
+
+    cmd_set_rules =
+      Enum.reduce(rules, [], fn r, acc ->
+        retrieve_cmds(r, acc)
+      end)
+      |> MapSet.new()
+
     defs_but_not_rules = MapSet.difference(cmd_set_defs, cmd_set_rules)
     rules_but_not_defs = MapSet.difference(cmd_set_rules, cmd_set_defs)
 
     cond do
-      defs_but_not_rules.size > 0 ->
-        raise "There are commands defined that are not used in rules: #{inspect(defs_but_not_rules)}"
+      MapSet.size(defs_but_not_rules) > 0 ->
+        raise "There are commands defined that are not used in rules: 
+        #{Enum.join(defs_but_not_rules, ", ")}"
 
-      rules_but_not_defs.size > 0 ->
-        raise "There are named commands used in the ruleset that are not defined prior: #{inspect(rules_but_not_defs)}"
+      MapSet.size(rules_but_not_defs) > 0 ->
+        raise "There are named commands used in the ruleset that are not defined prior: 
+        #{Enum.join(rules_but_not_defs, ", ")}"
     end
 
     IO.inspect(cmds, label: "commands")
@@ -48,30 +56,29 @@ defmodule CmdGraph do
     IO.inspect(rules, label: "rules")
   end
 
-  def retrieve_cmds(rules) do
-    Enum.reduce(rules, MapSet.new(), fn r, acc ->
-      case r do
-        {_, a, b} ->
-          cond do
-            is_list(a) and is_list(b) ->
-              acc.put(a) |> acc.put(b)
+  def retrieve_cmds(rule, acc) do
+    case rule do
+      {_, a, b} ->
+        cond do
+          is_list(a) and is_list(b) ->
+            [List.to_string(a) | [List.to_string(b) | acc]]
 
-            not is_list(a) and is_list(b) ->
-              acc.put(retrieve_cmds(a)) |> acc.put(b)
+          not is_list(a) and is_list(b) ->
+            [List.to_string(b) | retrieve_cmds(a, acc)]
 
-            is_list(a) and not is_list(b) ->
-              acc.put(a) |> acc.put(retrieve_cmds(b))
+          is_list(a) and not is_list(b) ->
+            [List.to_string(a) | retrieve_cmds(b, acc)]
 
-            not is_list(a) and not is_list(b) ->
-              acc.put(retrieve_cmds(a)) |> acc.put(retrieve_cmds(b))
-          end
+          not is_list(a) and not is_list(b) ->
+            acc = retrieve_cmds(a, acc)
+            retrieve_cmds(b, acc)
+        end
 
-        a when is_list(a) ->
-          acc.put(a)
+      a when is_list(a) ->
+        [List.to_string(a) | acc]
 
-        _ ->
-          raise "retrieve_cmds: improper format"
-      end
-    end)
+      a ->
+        raise "Improper format #{inspect(a)}"
+    end
   end
 end

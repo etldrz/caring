@@ -1,4 +1,4 @@
--file("/opt/homebrew/Cellar/erlang/29.0.5/lib/erlang/lib/parsetools-2.8/include/leexinc.hrl", 0).
+-file("/nix/store/xhslslqippgjnjir3f0pgkjw7l618apg-erlang-29.0.5/lib/erlang/lib/parsetools-2.8/include/leexinc.hrl", 0).
 %%
 %% %CopyrightBegin%
 %%
@@ -53,7 +53,7 @@ err_string(Char, Line) ->
                 "line ~B: not a valid character.", 
 				[Char, Line])).
 
--file("/opt/homebrew/Cellar/erlang/29.0.5/lib/erlang/lib/parsetools-2.8/include/leexinc.hrl", 47).
+-file("/nix/store/xhslslqippgjnjir3f0pgkjw7l618apg-erlang-29.0.5/lib/erlang/lib/parsetools-2.8/include/leexinc.hrl", 47).
 
 format_error({illegal,S}) -> ["illegal characters ",io_lib:write_string(S)];
 format_error({user,S}) -> S.
@@ -1143,4 +1143,4 @@ yyaction_13(TokenChars, TokenLine) ->
 -file("src/lexer.xrl", 38).
 yyaction_14(TokenChars, TokenLine) ->
      { error, err_string (TokenChars, TokenLine) } .
--file("/opt/homebrew/Cellar/erlang/29.0.5/lib/erlang/lib/parsetools-2.8/include/leexinc.hrl", 377).
+-file("/nix/store/xhslslqippgjnjir3f0pgkjw7l618apg-erlang-29.0.5/lib/erlang/lib/parsetools-2.8/include/leexinc.hrl", 377).

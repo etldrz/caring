@@ -3,10 +3,16 @@
 ```elixir
 # curr_path = __ENV__.file |> Path.dirname
 
+<<<<<<< Updated upstream
 # Mix.install([
 #   {:experiment_manager, path: curr_path},
 #   {:kino, "~> 0.19.0"}
 # ])
+=======
+Mix.install([
+  {:experiment_manager, path: curr_path},
+])
+>>>>>>> Stashed changes
 ```
 
 ## Section
@@ -23,10 +29,34 @@ cmd cmdC { turn that on && turn that off } low, node02;
 cmd cmdD { turn that off && clean files } node02;
 
 run cmdA and cmdB then cmdC or cmdD;
-run cmdC then cmdD;
+run cmdZ then cmdD;
 """
 
+<<<<<<< Updated upstream
 ExMan.loadrules(rules)
+=======
+run cmdA then cmdB;
+
+run cmdB then cmdC;
+
+run cmdA and cmdD;
+  
+#run cmdA and cmdB then cmdC or cmdD;
+# run cmdB or cmdA 
+#   then cmdA and cmdB 
+#     then cmdA 
+#       then cmdC and cmdA;
+
+# comma splitting will happen internally
+# collect {
+# output1.txt,
+# collected/data/here.csv
+# } node01;
+
+# there has to be a check to make 
+# sure that run rules dont use commands not 
+# specified by cmd rules
+>>>>>>> Stashed changes
 ```
 
 ```elixir

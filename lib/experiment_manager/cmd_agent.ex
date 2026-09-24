@@ -1,8 +1,8 @@
 defmodule CmdAgent do
   use Agent
 
-  def start_link(to_send, waiting_on) do
-    Agent.start_link(fn -> %{taget: to_send, await: waiting_on} end)
+  def start_link({:then, a, b}, gname) do
+    Agent.start_link(fn -> %{taget: a, await: b} end, name: {:global, gname})
   end
 
   def fulfilled?(cmd) do
