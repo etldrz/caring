@@ -15,15 +15,22 @@ defmodule CmdGraph do
         end
       end)
 
+    rules =
+      Enum.reduce(rules, [], fn r, acc ->
+        retrieve_cmds(r, acc)
+      end)
+
     cmds =
       cmds
       |> Enum.map(fn x ->
         case x do
           {:defcmd, {{:id, _, name}, {:body, _, body}, {:id, _, target}}} ->
-            %Cmd{name: List.to_string(name), body: body, target: target}
+          %Cmd{name: List.to_string(name), body: List.to_string(body), 
+            target: List.to_string(target)}
 
           {:defcmd, {{:id, _, name}, {:body, _, body}, {:usage, _, usage}, {:id, _, target}}} ->
-            %Cmd{name: List.to_string(name), body: body, usage: usage, target: target}
+          %Cmd{name: List.to_string(name), body: List.to_string(body), 
+            usage: List.to_string(usage), target: List.to_string(target)}
 
           _ ->
             raise "Inappropriate cmd value\n#{inspect(x)}"
@@ -32,11 +39,7 @@ defmodule CmdGraph do
 
     cmd_set_defs = MapSet.new(cmds, fn c -> c.name end)
 
-    cmd_set_rules =
-      Enum.reduce(rules, [], fn r, acc ->
-        retrieve_cmds(r, acc)
-      end)
-      |> MapSet.new()
+    cmd_set_rules = MapSet.new(rules)
 
     defs_but_not_rules = MapSet.difference(cmd_set_defs, cmd_set_rules)
     rules_but_not_defs = MapSet.difference(cmd_set_rules, cmd_set_defs)
@@ -57,9 +60,11 @@ defmodule CmdGraph do
     IO.inspect(cmds, label: "commands")
 
     IO.inspect(rules, label: "rules")
+    {cmds, rules}
   end
 
   def retrieve_cmds(rule, acc) do
+    IO.inspect(rule)
     case rule do
       {_, a, b} ->
         cond do

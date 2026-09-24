@@ -37,7 +37,7 @@ defmodule Main do
 
       {:ok, exp}
     catch
-      c -> {:error, "Bad node name given in command \n#{inspect(c)}"}
+      c -> {:error, "Bad node name given in command #{inspect(c)}"}
     end
   end
 
