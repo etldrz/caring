@@ -18,7 +18,9 @@ defmodule Main do
   def init(exp) do
     nodes =
       Node.list()
-      |> Map.new(fn n -> {List.first(String.split(n, "@")), n} end)
+      |> Map.new(fn n -> 
+        str = to_string(n)
+        {List.first(String.split(str, "@")), n} end)
 
     try do
       new_cmds = 

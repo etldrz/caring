@@ -16,21 +16,29 @@ defmodule CmdGraph do
       end)
 
     rules =
-      Enum.reduce(rules, [], fn r, acc ->
-        retrieve_cmds(r, acc)
+      Enum.map(rules, fn r ->
+        rule_name_to_str(r)
       end)
 
+    IO.inspect(cmds)
+
     cmds =
-      cmds
-      |> Enum.map(fn x ->
+      Enum.map(cmds, fn x ->
         case x do
           {:defcmd, {{:id, _, name}, {:body, _, body}, {:id, _, target}}} ->
-          %Cmd{name: List.to_string(name), body: List.to_string(body), 
-            target: List.to_string(target)}
+            %Cmd{
+              name: List.to_string(name),
+              body: List.to_string(body),
+              target: List.to_string(target)
+            }
 
           {:defcmd, {{:id, _, name}, {:body, _, body}, {:usage, _, usage}, {:id, _, target}}} ->
-          %Cmd{name: List.to_string(name), body: List.to_string(body), 
-            usage: List.to_string(usage), target: List.to_string(target)}
+            %Cmd{
+              name: List.to_string(name),
+              body: List.to_string(body),
+              usage: List.to_string(usage),
+              target: List.to_string(target)
+            }
 
           _ ->
             raise "Inappropriate cmd value\n#{inspect(x)}"
@@ -39,7 +47,11 @@ defmodule CmdGraph do
 
     cmd_set_defs = MapSet.new(cmds, fn c -> c.name end)
 
-    cmd_set_rules = MapSet.new(rules)
+    cmd_set_rules =
+      Enum.reduce(rules, [], fn r, acc ->
+        retrieve_cmds(r, acc)
+      end)
+      |> MapSet.new()
 
     defs_but_not_rules = MapSet.difference(cmd_set_defs, cmd_set_rules)
     rules_but_not_defs = MapSet.difference(cmd_set_rules, cmd_set_defs)
@@ -63,27 +75,51 @@ defmodule CmdGraph do
     {cmds, rules}
   end
 
+  def rule_name_to_str(rule) do
+    case rule do
+      {type, a, b} ->
+        cond do
+          is_list(a) and is_list(b) ->
+            {type, List.to_string(a), List.to_string(b)}
+
+          not is_list(a) and is_list(b) ->
+            {type, rule_name_to_str(a), List.to_string(b)}
+
+          is_list(a) and not is_list(b) ->
+            {type, List.to_string(a), rule_name_to_str(b)}
+
+          not is_list(a) and not is_list(b) ->
+            {type, rule_name_to_str(a), rule_name_to_str(b)}
+        end
+
+      a when is_list(a) ->
+        List.to_string(a)
+
+      a ->
+        raise "Improper format #{inspect(a)}"
+    end
+  end
+
   def retrieve_cmds(rule, acc) do
-    IO.inspect(rule)
     case rule do
       {_, a, b} ->
         cond do
           is_list(a) and is_list(b) ->
-            [List.to_string(a) | [List.to_string(b) | acc]]
+            [a | [b | acc]]
 
           not is_list(a) and is_list(b) ->
-            [List.to_string(b) | retrieve_cmds(a, acc)]
+            [b | retrieve_cmds(a, acc)]
 
           is_list(a) and not is_list(b) ->
-            [List.to_string(a) | retrieve_cmds(b, acc)]
+            [a | retrieve_cmds(b, acc)]
 
           not is_list(a) and not is_list(b) ->
             acc = retrieve_cmds(a, acc)
             retrieve_cmds(b, acc)
         end
 
-      a when is_list(a) ->
-        [List.to_string(a) | acc]
+      a when is_binary(a) ->
+        [a | acc]
 
       a ->
         raise "Improper format #{inspect(a)}"
