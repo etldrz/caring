@@ -21,7 +21,7 @@ defmodule Main do
       |> Map.new(fn n -> {List.first(String.split(n, "@")), n} end)
 
     try do
-      exp[:cmds] =
+      new_cmds = 
         Enum.map(exp[:cmds], fn c ->
           val = nodes[c.target]
           if val do
@@ -30,6 +30,8 @@ defmodule Main do
             throw(c)
           end
         end)
+
+      exp = Map.update!(exp, :cmds, fn _ -> new_cmds end)
 
       :net_kernel.monitor_nodes(true, [:nodedown_reason])
 
@@ -46,7 +48,7 @@ defmodule Main do
   @impl true
   def handle_cast({:update_cmds, cmd_status, cmd_name}, exp) do
     cmd_status =
-      case status do
+      case cmd_status do
         :ok ->
           :completed
 
@@ -57,14 +59,16 @@ defmodule Main do
 
     ## everything past here assumes an :ok response
 
-    exp[:cmds] =
+    status_update =
       Enum.map(exp[:cmds], fn c ->
-        if c.name === finished_cmd_name do
+        if c.name === cmd_name do
           %{c | status: cmd_status}
         else
           c
         end
       end)
+
+    exp = Map.update!(exp, :cmds, fn _ -> status_update end)
 
     {:noreply, exp}
   end
@@ -75,14 +79,15 @@ defmodule Main do
   end
 
   @impl true
-  def handle_call(:run_exp, exp) do
-    if length(no_deps) == 0 do
-      {:reply, :bad_exp_description, state}
-    else
-      # here, we can put in constraints to limit the flow of nodes and/or cmds, see make -j
-      no_deps |> Enum.each(fn c_id -> call_remote_steward(c_id, state[:exp][c_id]) end)
-      {:reply, :exp_initiated, Keyword.replace(state, :exp_running?, true)}
-    end
+  def handle_call(:run_exp, state) do
+    # if length(no_deps) == 0 do
+    #   {:reply, :bad_exp_description, state}
+    # else
+    #   # here, we can put in constraints to limit the flow of nodes and/or cmds, see make -j
+    #   no_deps |> Enum.each(fn c_id -> call_remote_steward(c_id, state[:exp][c_id]) end)
+    #   {:reply, :exp_initiated, Keyword.replace(state, :exp_running?, true)}
+    # end
+    {:ok, state}
   end
 
   # @impl true

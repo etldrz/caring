@@ -2,42 +2,9 @@
 -module(parser).
 -file("src/parser.erl", 3).
 -export([parse/1, parse_and_scan/1, format_error/1]).
--file("src/parser.yrl", 28).
-%err_code(either, {Line, Col}) ->
-%    lists:flatten(io_lib:format(
-%        "Error on EITHER at line ~p and col ~p: an EITHER "
-%        "rule should look like 'EITHER CMD OR CMD', "
-%        "'EITHER CMD OR RULE', 'EITHER RULE OR RULE', "
-%        "or 'EITHER RULE OR CMD'", [Line, Col]));
-%err_code(together, {Line, Col}) ->
-%    lists:flatten(io_lib:format(
-%        "Error on AND at line ~p and col ~p: an AND "
-%        "rule should look like 'CMD AND CMD', 'CMD AND "
-%        "RULE', 'RULE AND RULE', or 'RULE AND CMD'",
-%        [Line, Col]));
-%err_code(then, {Line, Col}) ->
-%    lists:flatten(io_lib:format(
-%        "Error on THEN at line ~p and col ~p: a THEN "
-%        "rule should look like 'CMD THEN CMD', 'CMD "
-%        "THEN RULE', 'RULE THEN RULE', or 'RULE THEN CMD'",
-%        [Line, Col]));
-%err_code(defcmd, {Line, Col}) ->
-%		lists:flatten(io_lib:format(
-%	    "Error on command definition at line ~p and col ~p: a "
-%	    "definition should have the format 'CMD NAME: \"BODY\";'.",
-%	    [Line, Col]));
-%err_code(run, {Line, Col}) ->
-%    lists:flatten(io_lib:format(
-%        "Error on RUN at line ~p and col ~p: proper "
-%        "formatting is 'RUN: RULE;' or 'RUN: CMD;'. "
-%        "Rules can be across multiple lines but must end "
-%        "with a semicolon.", [Line, Col]));
-%err_code(collect, {Line, Col}) ->
-%    lists:flatten(io_lib:format(
-%        "Error on COLLECT at line ~p and col ~p: proper "
-%        "formatting is 'COLLECT: FILE;'", [Line, Col])).
+-file("src/parser.yrl", 27).
 
--file("/nix/store/xhslslqippgjnjir3f0pgkjw7l618apg-erlang-29.0.5/lib/erlang/lib/parsetools-2.8/include/yeccpre.hrl", 0).
+-file("/nix/store/3qr2lycqdi98q47lrd69l4srfyv8q2f4-erlang-28.5.0.5/lib/erlang/lib/parsetools-2.7.1/include/yeccpre.hrl", 0).
 %%
 %% %CopyrightBegin%
 %%
@@ -227,7 +194,7 @@ yecctoken2string1(Other) ->
 
 
 
--file("src/parser.erl", 230).
+-file("src/parser.erl", 197).
 
 -dialyzer({nowarn_function, yeccpars2/7}).
 -compile({nowarn_unused_function,  yeccpars2/7}).
@@ -516,7 +483,7 @@ yeccgoto_rootlist(0, Cat, Ss, Stack, T, Ts, Tzr) ->
 -compile({inline,yeccpars2_2_/1}).
 -dialyzer({nowarn_function, yeccpars2_2_/1}).
 -compile({nowarn_unused_function,  yeccpars2_2_/1}).
--file("src/parser.yrl", 21).
+-file("src/parser.yrl", 20).
 yeccpars2_2_(__Stack0) ->
  [___1 | __Stack] = __Stack0,
  [begin
@@ -536,7 +503,7 @@ yeccpars2_7_(__Stack0) ->
 -compile({inline,yeccpars2_9_/1}).
 -dialyzer({nowarn_function, yeccpars2_9_/1}).
 -compile({nowarn_unused_function,  yeccpars2_9_/1}).
--file("src/parser.yrl", 18).
+-file("src/parser.yrl", 17).
 yeccpars2_9_(__Stack0) ->
  [___3,___2,___1 | __Stack] = __Stack0,
  [begin
@@ -576,7 +543,7 @@ yeccpars2_14_(__Stack0) ->
 -compile({inline,yeccpars2_21_/1}).
 -dialyzer({nowarn_function, yeccpars2_21_/1}).
 -compile({nowarn_unused_function,  yeccpars2_21_/1}).
--file("src/parser.yrl", 17).
+-file("src/parser.yrl", 16).
 yeccpars2_21_(__Stack0) ->
  [___7,___6,___5,___4,___3,___2,___1 | __Stack] = __Stack0,
  [begin
@@ -586,7 +553,7 @@ yeccpars2_21_(__Stack0) ->
 -compile({inline,yeccpars2_22_/1}).
 -dialyzer({nowarn_function, yeccpars2_22_/1}).
 -compile({nowarn_unused_function,  yeccpars2_22_/1}).
--file("src/parser.yrl", 15).
+-file("src/parser.yrl", 14).
 yeccpars2_22_(__Stack0) ->
  [___5,___4,___3,___2,___1 | __Stack] = __Stack0,
  [begin
@@ -596,7 +563,7 @@ yeccpars2_22_(__Stack0) ->
 -compile({inline,yeccpars2_25_/1}).
 -dialyzer({nowarn_function, yeccpars2_25_/1}).
 -compile({nowarn_unused_function,  yeccpars2_25_/1}).
--file("src/parser.yrl", 19).
+-file("src/parser.yrl", 18).
 yeccpars2_25_(__Stack0) ->
  [___4,___3,___2,___1 | __Stack] = __Stack0,
  [begin
@@ -606,7 +573,7 @@ yeccpars2_25_(__Stack0) ->
 -compile({inline,yeccpars2_26_/1}).
 -dialyzer({nowarn_function, yeccpars2_26_/1}).
 -compile({nowarn_unused_function,  yeccpars2_26_/1}).
--file("src/parser.yrl", 22).
+-file("src/parser.yrl", 21).
 yeccpars2_26_(__Stack0) ->
  [___2,___1 | __Stack] = __Stack0,
  [begin
@@ -614,4 +581,4 @@ yeccpars2_26_(__Stack0) ->
   end | __Stack].
 
 
--file("src/parser.yrl", 62).
+-file("src/parser.yrl", 28).
