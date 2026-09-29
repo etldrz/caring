@@ -4,7 +4,7 @@
 -export([parse/1, parse_and_scan/1, format_error/1]).
 -file("src/parser.yrl", 27).
 
--file("/opt/homebrew/Cellar/erlang/29.0.5/lib/erlang/lib/parsetools-2.8/include/yeccpre.hrl", 0).
+-file("/Users/etldrz/.local/share/mise/installs/erlang/28.5/lib/parsetools-2.7.1/include/yeccpre.hrl", 0).
 %%
 %% %CopyrightBegin%
 %%
@@ -517,7 +517,7 @@ yeccpars2_9_(__Stack0) ->
 yeccpars2_12_(__Stack0) ->
  [___3,___2,___1 | __Stack] = __Stack0,
  [begin
-                             [together, ___1, ___3]
+                             {together, ___1, ___3}
   end | __Stack].
 
 -compile({inline,yeccpars2_13_/1}).
@@ -527,7 +527,7 @@ yeccpars2_12_(__Stack0) ->
 yeccpars2_13_(__Stack0) ->
  [___3,___2,___1 | __Stack] = __Stack0,
  [begin
-                         [then, ___1, ___3]
+                         {then, ___1, ___3}
   end | __Stack].
 
 -compile({inline,yeccpars2_14_/1}).
@@ -537,7 +537,7 @@ yeccpars2_13_(__Stack0) ->
 yeccpars2_14_(__Stack0) ->
  [___3,___2,___1 | __Stack] = __Stack0,
  [begin
-                           [either, ___1, ___3]
+                           {either, ___1, ___3}
   end | __Stack].
 
 -compile({inline,yeccpars2_21_/1}).
@@ -547,7 +547,7 @@ yeccpars2_14_(__Stack0) ->
 yeccpars2_21_(__Stack0) ->
  [___7,___6,___5,___4,___3,___2,___1 | __Stack] = __Stack0,
  [begin
-    [defcmd, [___2, ___3, ___4, ___6]]
+    {defcmd, {___2, ___3, ___4, ___6}}
   end | __Stack].
 
 -compile({inline,yeccpars2_22_/1}).
@@ -557,7 +557,7 @@ yeccpars2_21_(__Stack0) ->
 yeccpars2_22_(__Stack0) ->
  [___5,___4,___3,___2,___1 | __Stack] = __Stack0,
  [begin
-    [defcmd, [___2, ___3, ___4]]
+    {defcmd, {___2, ___3, ___4}}
   end | __Stack].
 
 -compile({inline,yeccpars2_25_/1}).
@@ -567,7 +567,7 @@ yeccpars2_22_(__Stack0) ->
 yeccpars2_25_(__Stack0) ->
  [___4,___3,___2,___1 | __Stack] = __Stack0,
  [begin
-                                    [collect, [___2, ___3]]
+                                    {collect, {___2, ___3}}
   end | __Stack].
 
 -compile({inline,yeccpars2_26_/1}).

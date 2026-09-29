@@ -16,19 +16,29 @@
 ```elixir
 rules=
 """
-cmd cmdA { do this } node01;
-cmd cmdB { do that } node02;
-
-cmd cmdC { turn that on && turn that off } low, node02;
-cmd cmdD { turn that off && clean files } node02;
-
-run cmdA and cmdB then cmdC or cmdD;
-run cmdC then cmdD;
+cmd cmdZ { sleep 5 && echo hi } only, node0;
+cmd cmdA { mkdir -p $HOME/JAR_OF_DIRT } low, node0;
+cmd cmdB { cd $HOME/JAR_OF_DIRT && touch amazing && echo bye } node0;
+run cmdZ;
+run cmdA then cmdB;
 """
 
-ExMan.loadrules(rules)
+{cmds, rules} = ExMan.loadrules(rules)
+:ok
 ```
 
 ```elixir
-Main.start()
+Main.stop
+```
+
+```elixir
+{:ok, pid} = Main.initialize(cmds, rules)
+```
+
+```elixir
+Main.run_exp()
+```
+
+```elixir
+Main.get_state()
 ```

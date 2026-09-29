@@ -1,125 +1,140 @@
 defmodule Main do
+  defstruct [:cmds, :rules, :active_rules, :exp_running?]
   use GenServer
   require Logger
 
-  def start(exp) do
+  def initialize(cmds, rules) do
+    exp = %Main{cmds: cmds, rules: rules, active_rules: length(rules), exp_running?: false}
     GenServer.start(__MODULE__, exp, name: {:global, :main})
+  end
+
+  def stop() do
+    GenServer.call({:global, :main}, :stop)
+  end
+
+  def run_exp() do
+    GenServer.call({:global, :main}, :set_start)
+    exp = GenServer.call({:global, :main}, :get_state)
+    Enum.each(exp.rules, fn r ->
+      GenServer.call({:global, :main}, {:run_rule, r}, :infinity)
+    end)
   end
 
   def get_state() do
     GenServer.call({:global, :main}, :get_state)
   end
 
-  def run_exp(exp) do
-    GenServer.call({:global, :main}, :run_exp)
-  end
-
-  # user initializes, checks for node connectivity are
-  # preformed, then experiement is started seperately
+  # user initializes, checks for node connectivity and 
+  # correct naming are preformed, then experiement is 
+  # started seperately.
   @impl true
   def init(exp) do
-    :net_kernel.monitor_nodes(true, [:nodedown_reason])
-
-    cmd_deps =
-      exp[:cmds]
-      |> Enum.filter(fn {_c_id, c_data} ->
-        length(c_data[:deps]) > 0
-      end)
-      |> Enum.map(fn {c_id, c_data} ->
-        {c_id, c_data[:deps]}
+    nodes =
+      [Node.self() | Node.list()]
+      |> Map.new(fn n ->
+        str = to_string(n)
+        {List.first(String.split(str, "@")), n}
       end)
 
-    # possible cmd_status atoms
-    # :queued, :running, :completed, :error
-    cmd_status =
-      Enum.map(
-        exp[:cmds],
-        fn {c_id, _c_data} ->
-          {c_id, :queued}
-        end
-      )
+    try do
+      new_cmds =
+        Enum.map(exp.cmds, fn c ->
+          val = nodes[c.target]
 
-    {:ok, [cmd_status: cmd_status, cmd_deps: cmd_deps, exp: exp, exp_running?: false]}
+          if val do
+            %{c | target: val}
+          else
+            throw(c)
+          end
+        end)
+
+      exp = %{exp | cmds: new_cmds}
+
+      Enum.each(exp.cmds, fn c ->
+        :erpc.cast(c.target, Steward, :start, [c])
+      end)
+
+      :net_kernel.monitor_nodes(true, [:nodedown_reason])
+
+      {:ok, exp}
+    catch
+      c ->
+        {:error,
+         "Bad node target, '#{c.target}', " <>
+           "given in command '#{c.name}'. " <>
+           "Check for typos or bad connections. " <>
+           "Experiment not initialized."}
+    end
   end
 
   @impl true
-  def handle_cast({:update_cmds, status, finished_cmd_id}, state) do
-    new_cmd_status =
-      case status do
+  def handle_call(:stop, _from, exp) do
+    Enum.each(exp.cmds, fn c ->
+      GenServer.stop({:global, c.steward})
+    end)
+
+    {:stop, :normal, :ok, exp}
+  end
+
+  @impl true
+  def handle_call(:set_start, _from, exp) do
+    exp = %{exp | exp_running?: true}
+
+    {:reply, exp, exp}
+  end
+
+  @impl true
+  def handle_call({:run_rule, rule}, _from, exp) do
+    CmdAgent.start_agent(rule, nil, nil, exp.cmds)
+
+    {:reply, exp, exp}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, exp) do
+    {:reply, exp, exp}
+  end
+
+  @impl true
+  def handle_cast({:set_cmd_status, cmd_status, cmd_name}, exp) do
+    cmd_status =
+      case cmd_status do
         :ok ->
           :completed
 
         {:error, exit_status} ->
           :error
-          # error handling goes here
+
+        x ->
+          x
       end
 
-    ## everything past here assumes an :ok response
-
-    # update deps, if its empty for some cmd then run that command
-    {new_cmd_deps, cmds_to_run} =
-      state[:cmd_deps]
-      |> Enum.map(fn {c_id, c_deps} ->
-        {c_id, List.delete(c_deps, finished_cmd_id)}
-      end)
-      |> Enum.split_with(fn {_c_id, c_deps} ->
-        length(c_deps) > 0
-      end)
-
-    cmds_to_run
-    |> Enum.each(fn {c_id, _c_deps} ->
-      call_remote_steward(c_id, state[:exp][:cmds][c_id])
-    end)
-
-    new_cmd_status =
-      state[:cmd_status]
-      |> Enum.map(fn {c_id, s} ->
-        cond do
-          c_id == finished_cmd_id -> {c_id, new_cmd_status}
-          c_id in cmds_to_run -> {c_id, :running}
-          true -> {c_id, s}
+    status_update =
+      Enum.map(exp.cmds, fn c ->
+        if c.name === cmd_name do
+          %{c | status: cmd_status}
+        else
+          c
         end
       end)
 
-    new_state = [
-      cmd_status: new_cmd_status,
-      cmd_deps: new_cmd_deps |> Enum.filter(fn {_c_id, c_deps} -> length(c_deps) > 0 end),
-      exp: state[:exp],
-      exp_running?: true
-    ]
+    exp = %{exp | cmds: status_update}
+    # exp = Map.update!(exp, :cmds, fn _ -> status_update end)
 
-    {:noreply, new_state}
+    {:noreply, exp}
   end
 
   @impl true
-  def handle_call(:get_state, _from, state) do
-    {:reply, state, state}
+  def handle_cast(:rule_done, exp) do
+    exp =
+      if exp.active_rules === 1 do
+        %{exp | active_rules: 0, exp_running?: false}
+      else
+        %{exp | active_rules: exp.active_rules - 1}
+      end
+
+    {:noreply, exp}
   end
-
-  @impl true
-  def handle_call(:run_exp, state) do
-    no_deps =
-      Keyword.keys(state[:cmds])
-      |> Enum.filter(fn c_id -> c_id not in Keyword.keys(state[:deps]) end)
-
-    if length(no_deps) == 0 do
-      {:reply, :bad_exp_description, state}
-    else
-      # here, we can put in constraints to limit the flow of nodes and/or cmds, see make -j
-      no_deps |> Enum.each(fn c_id -> call_remote_steward(c_id, state[:exp][c_id]) end)
-      {:reply, :exp_initiated, Keyword.replace(state, :exp_running?, true)}
-    end
-  end
-
-  # @impl true
-  # def handle_call({:change_exp, new_exp}, state) do
-  #   if state[:exp_running? == true] do
-  #     {:reply, {:error, "Experiment already running"}, state}
-  #   else
-  #     new_state = [cmds: get_cmds(exp), exp: new_exp, exp_running?: false]
-  #     {:reply, :ok, new_state}
-  #   end
-  # end
 
   @impl true
   def handle_info({:nodeup, node, _info}, state) do
