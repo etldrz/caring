@@ -104,8 +104,7 @@ defmodule Steward do
     entry = [output, source: :stdout, ospid: ospid]
 
     Logger.info(
-      "#{state.cmd.steward} outputed to stdout with " <>
-        "output #{output}"
+      "#{state.cmd.target} stdout: #{output}"
     )
 
     GenServer.cast(self(), {:update_processes, [entry]})
@@ -118,10 +117,8 @@ defmodule Steward do
     entry = [output: output, source: :stdout, ospid: ospid]
 
     Logger.info(
-      "#{state.cmd.steward} outputted to stderr with " <>
-        "output #{output}"
+      "#{state.cmd.target} stderr: #{output}"
     )
-
     GenServer.cast(self(), {:update_processes, [entry]})
 
     {:noreply, state}
@@ -163,7 +160,7 @@ defmodule Steward do
     ]
 
     GenServer.cast(self(), {:update_processes, {entry, :error}})
-    GenServer.cast({:global, :main}, {:set_cmd_status, {:error, exit_status}, state.cmd_id})
+    GenServer.cast({:global, :main}, {:set_cmd_status, {:error, exit_status}, state.cmd.name})
 
     Enum.each(
       state.agent_requests |> MapSet.to_list(),

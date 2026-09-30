@@ -14,21 +14,30 @@
 ## RULES
 
 ```elixir
+if :global.whereis_name(:main) != :undefined, do: Main.stop()
+```
+
+```elixir
 rules=
 """
-cmd cmdZ { sleep 5 && echo hi } only, node0;
+cmd cmdZ { sleep 30 && echo "long running command" } only, node0;
+
 cmd cmdA { mkdir -p $HOME/JAR_OF_DIRT } low, node0;
+
 cmd cmdB { cd $HOME/JAR_OF_DIRT && touch amazing && echo bye } node0;
+
+cmd cmdC { echo "hello from node1" } node1;
+
+cmd cmdD { echo "hello from node2" } node2;
+
 run cmdZ;
 run cmdA then cmdB;
+run cmdC;
+run cmdD;
 """
 
 {cmds, rules} = ExMan.loadrules(rules)
 :ok
-```
-
-```elixir
-Main.stop
 ```
 
 ```elixir
@@ -41,4 +50,27 @@ Main.run_exp()
 
 ```elixir
 Main.get_state()
+```
+
+```elixir
+if :global.whereis_name(:main) != :undefined, do: Main.stop()
+```
+
+```elixir
+rules =
+"""
+cmd node0ins { sudo apt update -y && sudo apt install curl } node0;
+#cmd node1ins { curl https://mise.run | sh } node1;
+run node0ins;
+"""
+{cmds, rules} = ExMan.loadrules(rules)
+:ok
+```
+
+```elixir
+{:ok, pid} = Main.initialize(cmds, rules)
+```
+
+```elixir
+Main.run_exp()
 ```
